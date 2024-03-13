@@ -129,27 +129,33 @@ int sendline(proc conn, char *message) {
 char *recvuntil(proc conn, char *message) {
 	int strlength = strlen(message);
 	char *result = malloc(strlength * sizeof(char));
-	char *end = result;
-	while ( end-strlength < result || strncmp(message, end-strlength, strlength) != 0) {
+	int length = 0;
+	int capacity = strlength;
+	char buffer[1];
+	while ( length < strlength || strncmp(message, (result + length)-strlength, strlength) != 0) {
 		switch (conn.kind) {
 			case PROCESS_REMOTE:
-				if (read(conn.fd, end, 1) == -1) {
+				if (read(conn.fd, buffer, 1) == -1) {
 					printf("could not read");
 					return NULL;
 				}
 				break;
 			case PROCESS_LOCAL:
-				if (read(conn.pipe_from_program[0], end, 1) == -1) {
+				if (read(conn.pipe_from_program[0], buffer, 1) == -1) {
 					printf("could not read");
 					return NULL;
 				}
 				break;
 		}
-		//TODO: should probably increase exponentially
-		if (NULL == realloc(result, (++end) - result)) {
-			printf("problem allocation result");
-			return NULL;
-		};
+		length++;
+		if (capacity < length) {
+			capacity *= 2;
+			if (NULL == realloc(result, capacity * sizeof(*result))) {
+				printf("problem allocation result");
+				return NULL;
+			};
+		}
+		result[length-1] = buffer[0];	
 	} 
 	return result;
 }
