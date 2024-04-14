@@ -35,7 +35,6 @@ int sendline(proc conn, char *message);
 char *recvuntil(proc conn, char *message);
 char *recvline(proc conn);
 
-
 #ifdef CPWN_IMPLEMENTATION
 
 proc remote(char *address, unsigned short port) {
@@ -50,7 +49,8 @@ proc remote(char *address, unsigned short port) {
 	bzero(&servaddr, sizeof(servaddr));
 
 	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = inet_addr(address);
+	struct hostent *he = gethostbyname(address);
+	memcpy(&servaddr.sin_addr, he->h_addr_list[0], he->h_length);
 	servaddr.sin_port = htons(port);
 
 	if (connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) != 0) {
@@ -157,6 +157,7 @@ char *recvuntil(proc conn, char *message) {
 		}
 		result[length-1] = buffer[0];	
 	} 
+	result[length] = 0;
 	return result;
 }
 
@@ -177,5 +178,6 @@ int closep(proc conn) {
 		}
 	}
 }
+
 
 #endif //CPWN_IMPLEMENTATION
